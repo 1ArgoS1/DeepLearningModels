@@ -43,10 +43,12 @@ learning_rate = 0.001
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=6, kernel_size=5)
+
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=9, kernel_size=5)
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.conv2 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
+        self.conv2 = nn.Conv2d(in_channels=9, out_channels=6, kernel_size=5)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv3 = nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5)
         self.fc1 = nn.Linear(in_features=16 * 5 * 5, out_features=120)
         self.fc2 = nn.Linear(in_features=120, out_features=84)
         self.fc3 = nn.Linear(in_features=84, out_features=10)
@@ -54,9 +56,10 @@ class Net(nn.Module):
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
+        x = self.pool(F.relu(self.conv3(x)))
         x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.sigmoid(self.fc1(x))
+        x = F.sigmoid(self.fc2(x))
         x = self.fc3(x)
         return x
 
@@ -103,7 +106,7 @@ def train(epoch, trainloader, optimizer, criterion):
 
     print('epoch %d training loss: %.3f' %
             (epoch + 1, running_loss / (len(trainloader))))
-    
+
 ########################################################################
 # Let us look at how the network performs on the test dataset.
 
@@ -114,7 +117,7 @@ def test(testloader, model):
         for data in tqdm(testloader):
             images, labels = data
             if torch.cuda.is_available():
-                images, labels = images.cuda(), labels.cuda()        
+                images, labels = images.cuda(), labels.cuda()
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
@@ -134,7 +137,7 @@ def classwise_test(testloader, model):
         for data in tqdm(testloader):
             images, labels = data
             if torch.cuda.is_available():
-                images, labels = images.cuda(), labels.cuda()        
+                images, labels = images.cuda(), labels.cuda()
             outputs = net(images)
             _, predicted = torch.max(outputs, 1)
             c = (predicted == labels).squeeze()
@@ -159,5 +162,3 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
     torch.save(net.state_dict(), './models/model-'+str(epoch)+'.pth')
 
 print('Finished Training')
-
-
